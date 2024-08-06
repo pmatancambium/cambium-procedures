@@ -18,6 +18,7 @@ load_dotenv()
 
 # credentials = service_account.Credentials.from_service_account_info(st.secrets["gcs_connections"])
 
+
 def check_password():
     """Returns `True` if the user had the correct password."""
 
@@ -41,8 +42,9 @@ def check_password():
         st.error("😕 Password incorrect")
     return False
 
-if not check_password():
-    st.stop()  # Do not continue if check_password is not True.
+
+# if not check_password():
+#     st.stop()  # Do not continue if check_password is not True.
 
 # Main Streamlit app starts here
 logo_path = "logo.png"
@@ -66,7 +68,7 @@ if uploaded_file:
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            if file_path.endswith('.txt'):
+            if file_path.endswith(".txt"):
                 raw_data = uploaded_file.read()
                 result = chardet.detect(raw_data)
                 encoding = result["encoding"]
@@ -85,18 +87,24 @@ if uploaded_file:
             parsed_data = parser.parse(file_path)
 
             for chunk in parsed_data:
-                text = chunk['text']
-                filename = chunk['filename']
-                unique_chunk_identifier = f"{filename}-{chunk.get('heading', '')}-{len(text)}"
+                plain_text = chunk["plain_text"]
+                formatted_text = chunk["formatted_text"]
+                filename = chunk["filename"]
+                unique_chunk_identifier = (
+                    f"{filename}-{chunk.get('heading', '')}-{len(plain_text)}"
+                )
 
                 if skip_existing and vector_db.document_exists(unique_chunk_identifier):
                     st.warning(f"Chunk from {filename} already exists. Skipping.")
                     continue
 
-                embeddings = embedder.embed_batch([text])
+                embeddings = embedder.embed_batch([plain_text])
                 for embedding in embeddings:
                     try:
-                        chunk['unique_chunk_identifier'] = unique_chunk_identifier
+                        chunk["unique_chunk_identifier"] = unique_chunk_identifier
+                        chunk["text"] = (
+                            formatted_text  # Store formatted text in the database
+                        )
                         vector_db.store_embedding(embedding, chunk)
                     except DuplicateKeyError:
                         st.warning(f"Chunk from {filename} already exists. Skipping.")
@@ -117,7 +125,7 @@ if st.button("Search"):
         collection_name=mongo_collection_name,
     )
     search_service = SearchService(embedder, vector_db)
-    threshold = 0.8  # Set your threshold here
+    threshold = 0.85  # Set your threshold here
     results = search_service.search(query, threshold=threshold)
 
     if results:
@@ -144,9 +152,9 @@ if st.button("Search"):
                     }}
                 </style>
                 """,
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
-            
+
             # Use components.html to render the HTML content
             components.html(
                 f"""
@@ -155,7 +163,7 @@ if st.button("Search"):
                 </div>
                 """,
                 height=400,
-                scrolling=True
+                scrolling=True,
             )
     else:
         st.warning("No results found for your query.")
