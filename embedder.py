@@ -1,13 +1,14 @@
 # embedder.py
-import os
 import logging
 from google.oauth2 import service_account
 from abc import ABC, abstractmethod
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
+from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
+import streamlit as st
+from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 from google.cloud import aiplatform
-from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
-import streamlit as st
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -18,21 +19,28 @@ PROJECT_ID = st.secrets["GCP_PROJECT_ID"]
 REGION = st.secrets["GCP_REGION"]
 MODEL = st.secrets["GCP_MODEL"]
 
-if not all([PROJECT_ID, REGION, MODEL]):
-    raise ValueError("GCP_PROJECT_ID, GCP_REGION, and GCP_MODEL environment variables must be set.")
-
-# Initialize Vertex AI with project details
-aiplatform.init(project=PROJECT_ID, location=REGION)
-
 class Embedder(ABC):
     @abstractmethod
     def embed(self, text: str) -> list:
         pass
 
+if not all([PROJECT_ID, REGION, MODEL]):
+    raise ValueError("GCP_PROJECT_ID, GCP_REGION, and GCP_MODEL must be set in .streamlit/secrets.toml")
+
+aiplatform.init(project=PROJECT_ID, location=REGION)
+
 class GCPVertexAIEmbedder(Embedder):
     def __init__(self):
         log.info(f"Initializing GCPVertexAIEmbedder with model: {MODEL}, project: {PROJECT_ID}, region: {REGION}")
-        self.model = TextEmbeddingModel.from_pretrained(MODEL)
+        
+        # Create credentials from the service account info in secrets
+        credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        
+        # Initialize the model with the credentials
+        self.model = TextEmbeddingModel.from_pretrained(MODEL, credentials=credentials)
 
     @retry(
         stop=stop_after_attempt(5),
@@ -75,7 +83,9 @@ class GCPVertexAIEmbedder(Embedder):
         return [embedding.values for embedding in embeddings]
 
     async def get_google_auth_headers(self):
-        credentials_info = st.secrets["gcp_service_account"]
-        credentials = service_account.Credentials.from_service_account_info(credentials_info)
+        credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
         credentials.refresh(Request())
         return {"Authorization": f"Bearer {credentials.token}"}
