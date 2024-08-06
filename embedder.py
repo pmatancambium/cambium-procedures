@@ -16,7 +16,6 @@ load_dotenv()
 
 # Set the path to your service account key file
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "cambium-ltd-7dce79841151.json"
-credentials = service_account.Credentials.from_service_account_info(st.secrets["gcs_connections"])
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -84,5 +83,6 @@ class GCPVertexAIEmbedder(Embedder):
 
     async def get_google_auth_headers(self):
         # credentials, project = default()
+        credentials = service_account.Credentials.from_service_account_info(st.secrets["gcs_connections"])
         credentials.refresh(Request())
         return {"Authorization": f"Bearer {credentials.token}"}
