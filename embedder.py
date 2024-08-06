@@ -19,15 +19,13 @@ PROJECT_ID = st.secrets["GCP_PROJECT_ID"]
 REGION = st.secrets["GCP_REGION"]
 MODEL = st.secrets["GCP_MODEL"]
 
+if not all([PROJECT_ID, REGION, MODEL]):
+    raise ValueError("GCP_PROJECT_ID, GCP_REGION, and GCP_MODEL must be set in .streamlit/secrets.toml")
+
 class Embedder(ABC):
     @abstractmethod
     def embed(self, text: str) -> list:
         pass
-
-if not all([PROJECT_ID, REGION, MODEL]):
-    raise ValueError("GCP_PROJECT_ID, GCP_REGION, and GCP_MODEL must be set in .streamlit/secrets.toml")
-
-aiplatform.init(project=PROJECT_ID, location=REGION)
 
 class GCPVertexAIEmbedder(Embedder):
     def __init__(self):
@@ -39,8 +37,11 @@ class GCPVertexAIEmbedder(Embedder):
             scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
         
+        # Initialize Vertex AI with the credentials
+        aiplatform.init(project=PROJECT_ID, location=REGION, credentials=credentials)
+        
         # Initialize the model with the credentials
-        self.model = TextEmbeddingModel.from_pretrained(MODEL, credentials=credentials)
+        self.model = TextEmbeddingModel.from_pretrained(MODEL)
 
     @retry(
         stop=stop_after_attempt(5),
