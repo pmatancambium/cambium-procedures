@@ -51,10 +51,10 @@ st.set_page_config(page_title="Service Call Search Engine", layout="wide")
 uploaded_file = st.sidebar.file_uploader("Choose a file", type=["txt", "docx"])
 skip_existing = st.sidebar.checkbox("Skip existing documents", value=True)
 
-gcp_project = os.getenv("GCP_PROJECT_ID")
-gcp_region = os.getenv("GCP_REGION")
-gcp_model = os.getenv("GCP_MODEL")
-mongo_connection_string = os.getenv("MONGO_CONNECTION_STRING")
+# gcp_project = os.getenv("GCP_PROJECT_ID")
+# gcp_region = os.getenv("GCP_REGION")
+# gcp_model = os.getenv("GCP_MODEL")
+mongo_connection_string = st.secrets("MONGO_CONNECTION_STRING")
 mongo_db_name = "cambium-procedures"
 mongo_collection_name = "procedures"
 
