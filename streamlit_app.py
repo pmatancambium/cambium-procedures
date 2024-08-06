@@ -54,7 +54,7 @@ skip_existing = st.sidebar.checkbox("Skip existing documents", value=True)
 # gcp_project = os.getenv("GCP_PROJECT_ID")
 # gcp_region = os.getenv("GCP_REGION")
 # gcp_model = os.getenv("GCP_MODEL")
-mongo_connection_string = st.secrets("MONGO_CONNECTION_STRING")
+mongo_connection_string = st.secrets["MONGO_CONNECTION_STRING"]
 mongo_db_name = "cambium-procedures"
 mongo_collection_name = "procedures"
 
