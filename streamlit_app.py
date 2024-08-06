@@ -13,6 +13,8 @@ import re
 from pymongo.errors import DuplicateKeyError
 import streamlit.components.v1 as components
 from google.oauth2 import service_account
+import vertexai
+from vertexai.generative_models import GenerativeModel, ChatSession
 
 load_dotenv()
 
@@ -59,6 +61,38 @@ skip_existing = st.sidebar.checkbox("Skip existing documents", value=True)
 mongo_connection_string = st.secrets["MONGO_CONNECTION_STRING"]
 mongo_db_name = "cambium-procedures"
 mongo_collection_name = "procedures"
+
+# Initialize Vertex AI
+vertexai.init(project=st.secrets["GCP_PROJECT_ID"], location=st.secrets["GCP_REGION"])
+
+
+def generate_answer(question: str, context: str) -> str:
+    model = GenerativeModel("gemini-1.0-pro")  # ("gemini-1.5-pro-001")
+    chat = model.start_chat()
+    prompt = f"""Based on the following context, answer the question. If the answer is not in the context, say so.
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+    response = chat.send_message(prompt)
+    return response.text
+
+
+def is_rtl(text):
+    # This function checks if the text contains Hebrew characters
+    hebrew_pattern = re.compile(r"[\u0590-\u05FF\uFB1D-\uFB4F]")
+    return bool(hebrew_pattern.search(text))
+
+
+def display_text_with_direction(text):
+    if is_rtl(text):
+        st.markdown(f'<div dir="rtl" lang="he">{text}</div>', unsafe_allow_html=True)
+    else:
+        st.write(text)
+
 
 if uploaded_file:
     st.info("File uploaded successfully!")
@@ -125,7 +159,7 @@ if st.button("Search"):
         collection_name=mongo_collection_name,
     )
     search_service = SearchService(embedder, vector_db)
-    threshold = 0.85  # Set your threshold here
+    threshold = 0.8  # Set you threshold here
     results = search_service.search(query, threshold=threshold)
 
     if results:
@@ -154,16 +188,28 @@ if st.button("Search"):
                 """,
                 unsafe_allow_html=True,
             )
-
+            # Determine text direction for the result
+            dir_attr = "rtl" if is_rtl(result["text"]) else "ltr"
+            lang_attr = "he" if is_rtl(result["text"]) else "en"
             # Use components.html to render the HTML content
             components.html(
                 f"""
-                <div class="scrollable-text">
+                <div class="scrollable-text" dir="{dir_attr}" lang="{lang_attr}">
                     {result['text']}
                 </div>
                 """,
                 height=400,
                 scrolling=True,
             )
+            # Prepare context for Gemini API
+        context = "\n\n".join([result["text"] for result in results])
+
+        # Generate answer using Gemini API
+        with st.spinner("Generating answer..."):
+            answer = generate_answer(query, context)
+
+        # Display the generated answer
+        st.subheader("Generated Answer:")
+        st.write(answer)
     else:
         st.warning("No results found for your query.")
