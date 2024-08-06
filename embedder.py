@@ -2,18 +2,21 @@
 import os
 import logging
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 from abc import ABC, abstractmethod
 from google.auth import default
 from google.auth.transport.requests import Request
 from google.cloud import aiplatform
 from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type, before_sleep_log
+import streamlit as st
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Set the path to your service account key file
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "cambium-ltd-7dce79841151.json"
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "cambium-ltd-7dce79841151.json"
+credentials = service_account.Credentials.from_service_account_info(st.secrets["gcs_connections"])
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
