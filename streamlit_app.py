@@ -12,8 +12,11 @@ import os
 import re
 from pymongo.errors import DuplicateKeyError
 import streamlit.components.v1 as components
+from google.oauth2 import service_account
 
 load_dotenv()
+
+credentials = service_account.Credentials.from_service_account_info(st.secrets["connections.gcs"])
 
 def check_password():
     """Returns `True` if the user had the correct password."""
