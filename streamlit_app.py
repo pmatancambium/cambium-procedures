@@ -158,11 +158,33 @@ if st.button("Search"):
         collection_name=mongo_collection_name,
     )
     search_service = SearchService(embedder, vector_db)
-    threshold = 0.8  # Set you threshold here
+    threshold = 0.83  # Set you threshold here
     results = search_service.search(query, threshold=threshold)
 
     if results:
-        st.write(f"Found {len(results)} documents:")
+        # Prepare context for Gemini API
+        context = "\n\n".join([result["text"] for result in results])
+
+        # Generate answer using Gemini API
+        with st.spinner("Generating answer..."):
+            answer = generate_answer(query, context)
+
+        # Display the generated answer
+        st.subheader("Generated Answer:")
+        # Determine text direction for the answer
+        dir_attr = "rtl" if is_rtl(answer) else "ltr"
+        lang_attr = "he" if is_rtl(answer) else "en"
+
+        # Use Streamlit's markdown with custom CSS for RTL
+        st.markdown(
+            f"""
+            <div style="direction: {dir_attr}; text-align: {'right' if dir_attr == 'rtl' else 'left'};">
+            {answer}
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.subheader("Here are the relevant documents:")
 
         for index, result in enumerate(results, start=1):
             st.write("---")
@@ -200,27 +222,5 @@ if st.button("Search"):
                 height=400,
                 scrolling=True,
             )
-            # Prepare context for Gemini API
-        context = "\n\n".join([result["text"] for result in results])
-
-        # Generate answer using Gemini API
-        with st.spinner("Generating answer..."):
-            answer = generate_answer(query, context)
-
-        # Display the generated answer
-        st.subheader("Generated Answer:")
-        # Determine text direction for the answer
-        dir_attr = "rtl" if is_rtl(answer) else "ltr"
-        lang_attr = "he" if is_rtl(answer) else "en"
-
-        # Use Streamlit's markdown with custom CSS for RTL
-        st.markdown(
-            f"""
-            <div style="direction: {dir_attr}; text-align: {'right' if dir_attr == 'rtl' else 'left'};">
-            {answer}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
     else:
         st.warning("No results found for your query.")
