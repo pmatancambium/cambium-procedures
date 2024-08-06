@@ -1,4 +1,3 @@
-# streamlit_app.py
 import hmac
 import streamlit as st
 from dotenv import load_dotenv
@@ -210,6 +209,18 @@ if st.button("Search"):
 
         # Display the generated answer
         st.subheader("Generated Answer:")
-        st.write(answer)
+        # Determine text direction for the answer
+        dir_attr = "rtl" if is_rtl(answer) else "ltr"
+        lang_attr = "he" if is_rtl(answer) else "en"
+
+        # Use Streamlit's markdown with custom CSS for RTL
+        st.markdown(
+            f"""
+            <div style="direction: {dir_attr}; text-align: {'right' if dir_attr == 'rtl' else 'left'};">
+            {answer}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     else:
         st.warning("No results found for your query.")
