@@ -1,0 +1,10 @@
+chardet
+pymongo
+python-dotenv
+google-auth
+google-cloud-aiplatform
+vertexai
+tenacity
+streamlit
+numpy==2.0.0
+pandas==2.2.2

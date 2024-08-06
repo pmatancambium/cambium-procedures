@@ -1,0 +1,23 @@
+# ignore copy_code.py, remove_dups.py
+copy_code.py
+remove_dups.py
+scratch.py
+
+# ignore .env
+.env
+
+# ignore myenv and pycache
+myenv/
+__pycache__/
+
+# docx files
+*.docx
+
+# ignore all .txt files
+*.txt
+
+# ignore .streamlit directory and its contents
+.streamlit/
+
+# ignore json files
+*.json

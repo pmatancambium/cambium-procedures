@@ -1,0 +1,10 @@
+data_source:
+  type: file
+  file_path: 'data.json'
+
+embedding_service:
+  type: openai
+
+vector_db:
+  type: pinecone
+
