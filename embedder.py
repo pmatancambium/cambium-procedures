@@ -83,6 +83,6 @@ class GCPVertexAIEmbedder(Embedder):
         return [embedding.values for embedding in embeddings]
 
     async def get_google_auth_headers(self):
-        credentials, project = default()
+        # credentials, project = default()
         credentials.refresh(Request())
         return {"Authorization": f"Bearer {credentials.token}"}
