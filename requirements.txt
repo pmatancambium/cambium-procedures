@@ -5,7 +5,7 @@ google-auth
 google-cloud-aiplatform
 vertexai
 tenacity
-streamlit
+streamlit=1.37.0
 numpy==2.0.0
 pandas==2.2.2
 python-docx
