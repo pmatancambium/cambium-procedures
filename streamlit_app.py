@@ -65,7 +65,7 @@ mongo_collection_name = "procedures"
 vertexai.init(project=st.secrets["GCP_PROJECT_ID"], location=st.secrets["GCP_REGION"])
 
 
-def generate_answer(question: str, context: str) -> str:
+def generate_answer(question: str, context: str):
     model = GenerativeModel("gemini-1.0-pro")  # ("gemini-1.5-pro-001")
     chat = model.start_chat()
     prompt = f"""Based on the following context, answer the question. If the answer is not in the context, say so.
@@ -76,8 +76,8 @@ Context:
 Question: {question}
 
 Answer:"""
-    response = chat.send_message(prompt)
-    return response.text
+    response = chat.send_message(prompt, stream=True)
+    return response
 
 
 def is_rtl(text):
@@ -144,13 +144,15 @@ if uploaded_file:
 
             st.success("Data Loaded and Processed Successfully")
 
-query = st.text_input(
-    "Enter search query",
-    help="You can type your search query here. E.g., 'Network issue on 12th May'",
-)
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+messages = st.session_state["messages"]
 
-if st.button("Search"):
-    st.info("Searching for documents similar to: " + query)
+# Chat input for search query
+chat_message = st.chat_input("Enter search query")
+
+if chat_message:
+    # st.info("Searching for documents similar to: " + chat_message)
     embedder = GCPVertexAIEmbedder()
     vector_db = MongoVectorDB(
         connection_string=mongo_connection_string,
@@ -158,33 +160,38 @@ if st.button("Search"):
         collection_name=mongo_collection_name,
     )
     search_service = SearchService(embedder, vector_db)
-    threshold = 0.83  # Set you threshold here
-    results = search_service.search(query, threshold=threshold)
+    threshold = 0.83  # Set your threshold here
+    results = search_service.search(chat_message, threshold=threshold)
 
     if results:
         # Prepare context for Gemini API
         context = "\n\n".join([result["text"] for result in results])
 
+        # Add user message
+        messages.append({"role": "user", "parts": [chat_message]})
+        user_msg_area = st.chat_message("user")
+        if is_rtl(chat_message):
+            user_msg_area.markdown(
+                f'<div dir="rtl" lang="he">{chat_message}</div>', unsafe_allow_html=True
+            )
+        else:
+            user_msg_area.markdown(chat_message)
+
+        res_area = st.chat_message("assistant").empty()
+
         # Generate answer using Gemini API
-        with st.spinner("Generating answer..."):
-            answer = generate_answer(query, context)
+        response = generate_answer(chat_message, context)
 
-        # Display the generated answer
-        st.subheader("Generated Answer:")
-        # Determine text direction for the answer
-        dir_attr = "rtl" if is_rtl(answer) else "ltr"
-        lang_attr = "he" if is_rtl(answer) else "en"
+        res_text = ""
+        for chunk in response:
+            res_text += chunk.text
+            res_area.markdown(res_text)
 
-        # Use Streamlit's markdown with custom CSS for RTL
-        st.markdown(
-            f"""
-            <div style="direction: {dir_attr}; text-align: {'right' if dir_attr == 'rtl' else 'left'};">
-            {answer}
-            """,
-            unsafe_allow_html=True,
-        )
+        # Add model response to messages
+        messages.append({"role": "model", "parts": [res_text]})
 
-        st.subheader("Here are the relevant documents:")
+        st.write("---")
+        st.header("Here are the relevant documents:")
 
         for index, result in enumerate(results, start=1):
             st.write("---")
