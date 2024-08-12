@@ -223,7 +223,7 @@ with tab2:
 
     if documents:
         for doc in documents:
-            with st.expander(f"Document: {doc}"):
+            with st.expander(f"{doc}"):
                 chunks = vector_db.fetch_all_chunks(doc)
                 for chunk in chunks:
                     dir_attr = "rtl" if is_rtl(chunk["text"]) else "ltr"
