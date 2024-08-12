@@ -160,7 +160,7 @@ if chat_message:
         collection_name=mongo_collection_name,
     )
     search_service = SearchService(embedder, vector_db)
-    threshold = 0.83  # Set your threshold here
+    threshold = 0.85  # Set your threshold here
     results = search_service.search(chat_message, threshold=threshold)
 
     if results:
