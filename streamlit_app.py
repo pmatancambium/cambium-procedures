@@ -19,6 +19,11 @@ from vertexai.generative_models import GenerativeModel, ChatSession
 load_dotenv()
 
 
+# initialize password session state
+if "password" not in st.session_state:
+    st.session_state["password"] = ""
+
+
 def check_password():
     def password_entered():
         if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
