@@ -3,7 +3,7 @@ import hmac
 import streamlit as st
 from dotenv import load_dotenv
 from data_source import FileDataSource
-from data_parser import ServiceCallParser, ProcedureParser
+from data_parser import ProcedureParser
 from embedder import GCPVertexAIEmbedder
 from vectordb import MongoVectorDB
 from search_service import SearchService
@@ -38,14 +38,14 @@ def check_password():
     return False
 
 
-if not check_password():
-    st.stop()
+# if not check_password():
+#     st.stop()
 
 # Main Streamlit app starts here
 logo_path = "logo.png"
 st.set_page_config(page_title="Service Call Search Engine", layout="wide")
 
-uploaded_file = st.sidebar.file_uploader("Choose a file", type=["txt", "docx"])
+uploaded_file = st.sidebar.file_uploader("Choose a file", type=["txt", "docx", "pdf"])
 skip_existing = st.sidebar.checkbox("Skip existing documents", value=True)
 
 mongo_connection_string = st.secrets["MONGO_CONNECTION_STRING"]
