@@ -18,6 +18,7 @@ from vertexai.generative_models import GenerativeModel, ChatSession
 
 load_dotenv()
 
+
 def check_password():
     def password_entered():
         if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
@@ -29,10 +30,13 @@ def check_password():
     if st.session_state.get("password_correct", False):
         return True
 
-    st.text_input("Password", type="password", on_change=password_entered, key="password")
+    st.text_input(
+        "Password", type="password", on_change=password_entered, key="password"
+    )
     if "password_correct" in st.session_state:
         st.error("😕 Password incorrect")
     return False
+
 
 if not check_password():
     st.stop()
@@ -51,10 +55,12 @@ mongo_collection_name = "procedures"
 # Initialize Vertex AI
 vertexai.init(project=st.secrets["GCP_PROJECT_ID"], location=st.secrets["GCP_REGION"])
 
+
 def generate_answer(question: str, context: str):
     model = GenerativeModel("gemini-1.0-pro")
     chat = model.start_chat()
-    prompt = f"""Based on the following context, answer the question. If the answer is not in the context, say so.
+    # prompt = f"""Based on the following context, answer the question. If the answer is not in the context, say so.
+    prompt = f"""בהתבסס על ההקשר הבא, ענה על השאלה. אם התשובה אינה בהקשר, תגיד זאת. נסה לתת תשובה מפורטת
 
 Context:
 {context}
@@ -65,15 +71,18 @@ Answer:"""
     response = chat.send_message(prompt, stream=True)
     return response
 
+
 def is_rtl(text):
     hebrew_pattern = re.compile(r"[\u0590-\u05FF\uFB1D-\uFB4F]")
     return bool(hebrew_pattern.search(text))
+
 
 def display_text_with_direction(text):
     if is_rtl(text):
         st.markdown(f'<div dir="rtl" lang="he">{text}</div>', unsafe_allow_html=True)
     else:
         st.write(text)
+
 
 # Adding tabs for different sections of the app
 tab1, tab2 = st.tabs(["Search", "View All Documents"])
@@ -113,7 +122,9 @@ with tab1:
                         f"{filename}-{chunk.get('heading', '')}-{len(plain_text)}"
                     )
 
-                    if skip_existing and vector_db.document_exists(unique_chunk_identifier):
+                    if skip_existing and vector_db.document_exists(
+                        unique_chunk_identifier
+                    ):
                         st.warning(f"Chunk from {filename} already exists. Skipping.")
                         continue
 
@@ -126,7 +137,9 @@ with tab1:
                             )
                             vector_db.store_embedding(embedding, chunk)
                         except DuplicateKeyError:
-                            st.warning(f"Chunk from {filename} already exists. Skipping.")
+                            st.warning(
+                                f"Chunk from {filename} already exists. Skipping."
+                            )
 
                 st.success("Data Loaded and Processed Successfully")
 
@@ -156,7 +169,8 @@ with tab1:
             user_msg_area = st.chat_message("user")
             if is_rtl(chat_message):
                 user_msg_area.markdown(
-                    f'<div dir="rtl" lang="he">{chat_message}</div>', unsafe_allow_html=True
+                    f'<div dir="rtl" lang="he">{chat_message}</div>',
+                    unsafe_allow_html=True,
                 )
             else:
                 user_msg_area.markdown(chat_message)
@@ -206,7 +220,7 @@ with tab1:
                         {result['text']}
                     </div>
                     """,
-                    height=400,
+                    # height=400,
                     scrolling=True,
                 )
         else:
@@ -234,10 +248,9 @@ with tab2:
                             {chunk['text']}
                         </div>
                         """,
-                        height=200,
+                        # height=200,
                         scrolling=True,
                     )
                     st.write("---")
     else:
         st.info("No documents available.")
-
