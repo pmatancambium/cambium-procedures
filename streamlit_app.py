@@ -90,7 +90,7 @@ def display_text_with_direction(text):
 
 
 # Adding tabs for different sections of the app
-tab1, tab2 = st.tabs(["Search", "View All Documents"])
+tab1, tab2, tab3 = st.tabs(["Search", "View All Documents", "Unanswered Questions"])
 
 with tab1:
     if uploaded_file:
@@ -229,7 +229,9 @@ with tab1:
                     scrolling=True,
                 )
         else:
-            st.warning("No results found for your query.")
+            st.warning(
+                "No results found for your query. You're question has been stored for future training."
+            )
 
 with tab2:
     st.header("Available Documents")
@@ -259,3 +261,21 @@ with tab2:
                     st.write("---")
     else:
         st.info("No documents available.")
+with tab3:
+    st.header("Unanswered Questions")
+    st.write("---")
+    unanswered_questions = vector_db.unanswered_collection.find().sort("timestamp", -1)
+
+    for question in unanswered_questions:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write(f"Question: {question['question']}")
+            st.write(f"Timestamp: {question['timestamp']}")
+        with col2:
+            if st.button("Delete", key=f"delete_{question['_id']}"):
+                if vector_db.delete_unanswered_question(question["_id"]):
+                    st.success("Question deleted successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to delete the question. Please try again.")
+        st.write("---")
